@@ -1,0 +1,1 @@
+"""Gite Agent application package."""

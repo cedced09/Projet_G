@@ -1,0 +1,16 @@
+{
+  "source": "manual",
+  "external_id": null,
+  "source_url": "https://example.invalid/listing/123",
+  "title": "Domaine avec activité de gîtes",
+  "raw_location": "Var",
+  "current_price_cents": 275000000,
+  "living_area_m2": 620,
+  "land_area_m2": 18000,
+  "bedroom_count": 14,
+  "accommodation_unit_count": 6,
+  "published_at": null,
+  "first_seen_at": "2026-07-17T15:00:00Z",
+  "last_seen_at": "2026-07-17T15:00:00Z",
+  "description": "Exemple fictif utilisé uniquement pour les tests et démonstrations."
+}

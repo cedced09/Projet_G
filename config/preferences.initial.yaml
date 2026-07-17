@@ -1,0 +1,37 @@
+profile_version: 1
+
+financial:
+  available_equity_eur: 3000000
+  additional_debt_possible: true
+  target_net_income_after_tax_eur_per_year: 70000
+
+geography:
+  preferred_department_codes:
+    - "83"
+  reference_city: "Toulon"
+  target_max_drive_time_minutes: 45
+  allow_outside_preferred_department: true
+
+property:
+  preferred_min_land_area_m2: 5000
+  larger_land_is_positive: true
+  renovation_accepted: true
+  planning_permission_risk_tolerance: low
+  owner_area_separation_preferred: true
+
+operations:
+  owner_occupied: true
+  horse_activity_allowed: false
+  wine_activity_preferred: false
+  complementary_revenue_welcome: true
+  seasonal_downtime_preferred: true
+
+scoring_weights:
+  economic_viability: 30
+  location: 15
+  accommodation_potential: 15
+  owner_quality_of_life: 10
+  land_and_outbuildings: 10
+  complementary_activity: 10
+  works_and_planning: 5
+  seasonality_and_workload: 5
