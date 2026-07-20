@@ -62,7 +62,7 @@ class PropertyModel(Base):
     )
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    listings: Mapped[list["ListingModel"]] = relationship(
+    listings: Mapped[list[ListingModel]] = relationship(
         back_populates="property", cascade="all, delete-orphan"
     )
 
@@ -71,7 +71,10 @@ class ListingModel(Base):
     __tablename__ = "listings"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    property_id: Mapped[UUID] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
+    public_id: Mapped[str] = mapped_column(String(20), unique=True)
+    property_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE")
+    )
     source: Mapped[str] = mapped_column(String(100))
     external_id: Mapped[str | None] = mapped_column(String(255))
     source_url: Mapped[str] = mapped_column(Text, unique=True)
@@ -89,4 +92,19 @@ class ListingModel(Base):
         DateTime(timezone=True), default=utc_now, onupdate=utc_now
     )
 
-    property: Mapped[PropertyModel] = relationship(back_populates="listings")
+    property: Mapped[PropertyModel | None] = relationship(back_populates="listings")
+
+
+class IngestionRunModel(Base):
+    __tablename__ = "ingestion_runs"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column(String(100))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(50), default="running")
+    items_seen: Mapped[int] = mapped_column(Integer, default=0)
+    items_created: Mapped[int] = mapped_column(Integer, default=0)
+    items_updated: Mapped[int] = mapped_column(Integer, default=0)
+    error_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_details: Mapped[list[dict[str, Any]] | None] = mapped_column(json_type)

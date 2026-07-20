@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
@@ -39,7 +40,7 @@ class PropertyRead(PropertyCreate):
 
 
 class ListingCreate(BaseModel):
-    property_id: UUID
+    property_id: UUID | None = None
     source: str = Field(min_length=1, max_length=100)
     external_id: str | None = None
     source_url: HttpUrl
@@ -50,12 +51,14 @@ class ListingCreate(BaseModel):
     published_at: datetime | None = None
     first_seen_at: datetime
     last_seen_at: datetime
+    raw_payload: dict[str, Any] | None = None
 
 
 class ListingRead(ListingCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    public_id: str
     removed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

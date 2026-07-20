@@ -29,7 +29,7 @@ Le logiciel est destiné à un utilisateur unique recherchant un domaine dans le
 
 ### Python
 
-- Python 3.12.
+- Python 3.14.
 - Typage strict sur le code métier.
 - Pydantic pour les objets entrants/sortants.
 - SQLAlchemy 2 en style moderne.

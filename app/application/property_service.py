@@ -33,6 +33,13 @@ class PropertyService:
             return None
         return PropertyRead.model_validate(property_model)
 
+    def delete_property(self, property_id: UUID) -> None:
+        property_model = self._properties.get(property_id)
+        if property_model is None:
+            raise ValueError(f"Property {property_id} does not exist.")
+        self._properties.delete(property_model)
+        self._session.commit()
+
     def list_properties(
         self,
         *,

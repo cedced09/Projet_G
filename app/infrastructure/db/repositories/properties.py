@@ -22,6 +22,10 @@ class PropertyRepository:
     def get(self, property_id: UUID) -> PropertyModel | None:
         return self._session.get(PropertyModel, property_id)
 
+    def delete(self, property_model: PropertyModel) -> None:
+        self._session.delete(property_model)
+        self._session.flush()
+
     def list(
         self,
         *,

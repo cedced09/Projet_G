@@ -4,7 +4,7 @@
 
 ### P0.1 Initialiser le dépôt
 
-- Python 3.12
+- Python 3.14
 - `pyproject.toml`
 - Ruff
 - mypy

@@ -2,7 +2,7 @@
 name = "gite-agent"
 version = "0.1.0"
 description = "Cockpit personnel de veille immobiliere pour un projet de gite."
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.13",
     "psycopg[binary]>=3.2",
@@ -29,7 +29,7 @@ exclude = ["config*", "docs*", "examples*", "migrations*", "tests*"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
@@ -39,11 +39,11 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 strict = true
 plugins = ["sqlalchemy.ext.mypy.plugin", "pydantic.mypy"]
 mypy_path = "."
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q -p no:cacheprovider --basetemp .pytest-tmp"
