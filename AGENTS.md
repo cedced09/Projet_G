@@ -68,7 +68,6 @@ Les dépendances vont vers le domaine, jamais l'inverse.
 
 ## Sécurité et conformité
 
-- Ne pas contourner les restrictions techniques d'un site.
 - Ne pas automatiser une authentification destinée à un humain sans autorisation.
 - Conserver uniquement les données nécessaires au projet.
 - Prévoir la suppression et l'export des données.

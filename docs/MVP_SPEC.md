@@ -15,21 +15,24 @@ Fournir un cockpit personnel utilisable quotidiennement, avant toute automatisat
 
 ## Fonctionnalités obligatoires
 
-### 1. Création manuelle d'un bien
+### 1. Import et validation d'annonces
 
-Champs minimaux :
+Le parcours courant part des alertes email officielles. Une annonce importée peut être enrichie par
+HTML sauvegardé, puis enregistrée comme bien canonique après validation utilisateur.
 
-- titre interne ;
-- type de bien ;
+Champs minimaux attendus lorsqu'ils sont disponibles :
+
+- titre de l'annonce ;
+- source ;
+- URL de l'annonce ;
 - commune ou zone textuelle ;
 - prix affiché ;
+- nombre de pièces ;
 - surface habitable ;
 - surface du terrain ;
 - nombre de chambres ;
-- nombre d'unités d'hébergement ;
+- présence d'une piscine ;
 - description libre ;
-- source ;
-- URL de l'annonce.
 
 Les champs inconnus doivent pouvoir rester vides.
 
@@ -125,8 +128,8 @@ Ces fonctions seront ajoutées par incréments.
 
 - L'application démarre avec Docker Compose.
 - La base est créée par migration.
-- Un bien peut être ajouté par l'interface.
-- Une annonce peut être rattachée à ce bien.
+- Des annonces peuvent être importées depuis les alertes email configurées.
+- Une annonce validée peut être enregistrée comme bien depuis l'interface.
 - La liste des biens est persistante.
 - Les champs facultatifs sont gérés proprement.
 - Les montants sont stockés sans flottants.

@@ -242,3 +242,247 @@ autorisés. Sinon il applique `EMAIL_MAX_LISTINGS_PER_MESSAGE`.
 
 Les faux positifs diminuent sans visiter les portails immobiliers. Cette heuristique reste simple et
 devra être spécialisée par source si les alertes fournissent une structure exploitable.
+
+## ADR-012 — Extraction structurée depuis les cartes HTML des alertes
+
+**Statut :** accepté
+
+**Date :** 2026-07-20
+
+**Contexte**
+
+Les alertes SeLoger contiennent une version texte avec de nombreux liens de tracking et une version
+HTML structurée où chaque carte annonce porte des ancres nommées comme `adimage1_1`, `adprice1_1`,
+`adtype1_1`, `adcriteria1_1` et `adlocation1_1`.
+
+**Décision**
+
+L'import email privilégie les cartes HTML structurées pour identifier l'URL et extraire les
+caractéristiques principales visibles dans le mail. Aucune visite automatique de la page annonce
+n'est effectuée.
+
+**Conséquences**
+
+L'extraction est plus précise pour SeLoger et reste conforme à l'approche sans scraping. Les champs
+absents du mail restent inconnus jusqu'à saisie manuelle ou import autorisé plus riche.
+
+## ADR-013 — Enrichissement par HTML fourni manuellement
+
+**Statut :** accepté
+
+**Date :** 2026-07-20
+
+**Contexte**
+
+Les pages annonce contiennent davantage d'informations que les emails, mais les CGU SeLoger
+interdisent les dispositifs automatisés de consultation ou d'extraction du site.
+
+**Décision**
+
+L'application ne télécharge pas automatiquement les pages SeLoger. L'utilisateur peut ouvrir une
+annonce dans son navigateur, enregistrer le HTML, puis fournir ce fichier à l'application pour un
+parsing local.
+
+**Conséquences**
+
+L'enrichissement reste piloté par une action humaine explicite et évite l'accès automatisé au
+portail. La qualité d'extraction dépendra du HTML fourni et pourra être améliorée source par source.
+
+## ADR-014 — Fiche bien synchronisée depuis l'annonce validée
+
+**Statut :** accepté
+
+**Date :** 2026-07-20
+
+**Contexte**
+
+Une annonce importée puis enrichie depuis un HTML fourni manuellement contient parfois plus
+d'informations exploitables que la fiche bien synthétique.
+
+**Décision**
+
+Lorsqu'une annonce est enregistrée comme bien ou enrichie alors qu'elle est déjà rattachée, les
+champs descriptifs principaux sont copiés sur le bien : titre, commune, prix, pièces, surfaces,
+chambres et piscine. Le titre de l'annonce et la source restent deux champs distincts.
+
+**Conséquences**
+
+La liste des biens affiche une fiche exploitable sans ouvrir chaque annonce. Si plusieurs annonces
+sont rattachées au même bien, la dernière annonce enrichie peut remplacer ces champs de synthèse ;
+une règle de fusion plus fine sera nécessaire lorsque la déduplication deviendra plus avancée.
+
+## ADR-015 — Carte Leaflet avec localisation contrôlée
+
+**Statut :** accepté
+
+**Date :** 2026-07-20
+
+**Contexte**
+
+La carte doit être lisible et navigable comme une vraie carte. Le projet n'intègre toutefois pas
+encore de fournisseur de géocodage et ne doit pas inventer de coordonnées.
+
+**Décision**
+
+La page cartographique utilise Leaflet et les tuiles OpenStreetMap chargées depuis Internet. Elle
+utilise d'abord les coordonnées explicitement stockées sur les biens. À défaut, elle s'appuie sur un
+petit référentiel local de communes du Var maintenu dans le code. Les annonces dont la commune n'est
+pas reconnue sont affichées dans une liste séparée.
+
+**Conséquences**
+
+La carte est une vraie carte interactive avec zoom et déplacement, et des marqueurs cliquables par
+ID d'annonce. Elle nécessite un accès Internet pour afficher le fond de carte. Le référentiel
+communal devra être remplacé ou complété par un géocodage contrôlé lorsque cette fonctionnalité sera
+priorisée.
+
+## ADR-016 — Archivage local des HTML fournis manuellement
+
+**Statut :** remplacé par ADR-017
+
+**Date :** 2026-07-20
+
+**Contexte**
+
+Les HTML de pages annonce fournis manuellement peuvent servir à enrichir immédiatement les données,
+mais aussi à revenir sur l'extraction ou à alimenter plus tard un traitement IA contrôlé.
+
+**Décision**
+
+Lorsqu'un HTML est analysé, l'application sauvegarde le fichier côté serveur dans
+`HTML_STORAGE_DIR`, stocke le chemin, la date de sauvegarde et une empreinte SHA-256 sur l'annonce.
+Le dossier `./data` est monté dans le conteneur Docker pour persister ces fichiers localement.
+
+**Conséquences**
+
+L'interface peut afficher un statut fiable `HTML enrichi` et permettre de récupérer le fichier. Les
+fichiers HTML ne sont pas versionnés dans Git. Un futur traitement IA pourra consommer ces archives
+sans revisiter automatiquement les portails.
+
+## ADR-017 — Archivage PostgreSQL des HTML fournis manuellement
+
+**Statut :** accepté
+
+**Date :** 2026-07-22
+
+**Contexte**
+
+Les archives HTML doivent être accessibles à tous les utilisateurs de l'application, y compris si le
+conteneur Docker est déployé sur une autre machine. Le stockage dans un dossier local du poste de
+développement ne garantit pas cet accès partagé.
+
+**Décision**
+
+Les HTML fournis manuellement sont stockés dans PostgreSQL dans la table
+`listing_html_archives`, liée à `listings`. Les fichiers associés au HTML, par exemple images, CSS
+ou JavaScript issus du dossier créé par le navigateur, sont stockés dans
+`listing_html_archive_assets`. L'annonce conserve la date de sauvegarde et l'empreinte SHA-256 pour
+afficher le statut et tracer le contenu archivé. Le contenu HTML est lu depuis la base pour
+l'affichage et le téléchargement dans l'interface.
+
+**Conséquences**
+
+La sauvegarde et la restauration de la base couvrent aussi les HTML et leurs fichiers associés. Tous
+les utilisateurs connectés à la même base accèdent aux mêmes contenus. Cette solution reste simple
+pour le volume attendu ; un stockage objet pourra être introduit plus tard si les archives deviennent
+volumineuses.
+
+## ADR-018 — Filtrage des emails promotionnels sans caractéristiques d'annonce
+
+**Statut :** accepté
+
+**Date :** 2026-07-22
+
+**Contexte**
+
+Certaines communications SeLoger utilisent une structure HTML proche des alertes, mais correspondent
+à des contenus promotionnels ou éditoriaux plutôt qu'à des annonces immobilières réelles.
+
+**Décision**
+
+L'ingestion ne crée une annonce que si la carte email contient au moins une caractéristique
+immobilière structurée : prix, nombre de pièces, surface habitable, surface de terrain ou nombre de
+chambres. Les liens sans ces caractéristiques sont ignorés, même si leur domaine est autorisé.
+
+**Conséquences**
+
+Les publicités et contenus génériques ne polluent plus la base. Une annonce réelle très pauvre en
+métadonnées pourrait être ignorée ; ce compromis est accepté pour conserver une base propre.
+
+## ADR-019 — Téléchargement HTML direct limité aux domaines autorisés
+
+**Statut :** accepté
+
+**Date :** 2026-07-22
+
+**Contexte**
+
+Le téléchargement direct d'une page source est plus ergonomique que l'upload manuel, mais il peut
+constituer une automatisation d'accès à un portail immobilier.
+
+**Décision**
+
+Le bouton de téléchargement direct est présent dans l'interface, mais il n'est actif que pour les
+domaines explicitement listés dans `HTML_AUTO_DOWNLOAD_ALLOWED_DOMAINS`. Par défaut, cette liste est
+vide. Pour les autres domaines, l'utilisateur conserve le flux manuel d'upload HTML.
+
+**Conséquences**
+
+Les sources autorisées peuvent être archivées en un clic dans PostgreSQL. Les portails non autorisés
+ne sont pas téléchargés automatiquement, ce qui préserve le cadre de conformité du projet.
+
+## ADR-020 — Import local des exports Chrome complets
+
+**Statut :** accepté
+
+**Date :** 2026-07-22
+
+**Contexte**
+
+Lorsqu'une page est enregistrée manuellement depuis Chrome en mode page complète, le navigateur crée
+un fichier HTML et un répertoire voisin contenant les ressources associées. L'upload web classique
+ne fournit pas à Streamlit le chemin local complet du fichier sélectionné, donc l'application ne peut
+pas deviner automatiquement le répertoire frère depuis un simple upload navigateur.
+
+**Décision**
+
+L'interface propose un seul bouton `Choisir et importer le HTML`, qui ouvre une boîte de dialogue
+fichier native sur la machine qui exécute Streamlit. L'utilisateur sélectionne le fichier HTML
+principal. Comme le chemin réel du fichier est alors connu côté serveur, l'application lit
+automatiquement les répertoires frères usuels, comme `nom_fichiers` ou `nom_files`, puis archive le
+HTML et les ressources en PostgreSQL. `HTML_IMPORT_DIRECTORIES` sert seulement à proposer un dossier
+initial à la boîte de dialogue.
+
+**Conséquences**
+
+L'enrichissement manuel devient beaucoup plus rapide lorsque l'application tourne sur le poste qui
+contient l'export Chrome. En Docker sans interface graphique ou sur un serveur distant, cette boîte
+de dialogue peut ne pas être disponible et un flux d'import dédié devra être ajouté. Un simple upload
+navigateur du fichier HTML ne suffit pas pour découvrir automatiquement le dossier frère, car le
+navigateur ne transmet pas ce chemin à Streamlit. Ce choix ne visite pas automatiquement le portail
+immobilier et reste compatible avec l'approche d'archivage manuel.
+
+## ADR-021 — Retrait des formulaires de création manuelle
+
+**Statut :** accepté
+
+**Date :** 2026-07-22
+
+**Contexte**
+
+Le parcours réellement utilisé consiste à importer des annonces depuis les alertes email, enrichir
+les annonces pertinentes avec le HTML sauvegardé, puis créer un bien canonique depuis une annonce
+validée. Les formulaires de création manuelle d'un bien et d'ajout manuel d'une annonce à un bien
+alourdissent le tableau de bord sans être utilisés.
+
+**Décision**
+
+Retirer ces deux formulaires de l'interface Streamlit. Les services applicatifs et repositories
+conservent les méthodes de création, car elles restent nécessaires au flux `Créer bien` depuis une
+annonce importée et aux tests métier.
+
+**Conséquences**
+
+Le tableau de bord devient plus direct et centré sur le flux quotidien. Si un besoin ponctuel de
+saisie manuelle revient, il sera traité comme un flux dédié plutôt que comme un formulaire permanent
+sur la page principale.

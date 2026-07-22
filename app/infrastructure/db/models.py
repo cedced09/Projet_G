@@ -3,7 +3,18 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    BigInteger,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
@@ -43,9 +54,11 @@ class PropertyModel(Base):
     )
     description: Mapped[str | None] = mapped_column(Text)
     price_cents: Mapped[int | None] = mapped_column(BigInteger)
+    room_count: Mapped[int | None] = mapped_column(Integer)
     living_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     land_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
     bedroom_count: Mapped[int | None] = mapped_column(Integer)
+    has_pool: Mapped[bool | None]
     accommodation_unit_count: Mapped[int | None] = mapped_column(Integer)
     owner_area_separated: Mapped[bool | None]
     municipality: Mapped[str | None] = mapped_column(String(255))
@@ -80,19 +93,71 @@ class ListingModel(Base):
     source_url: Mapped[str] = mapped_column(Text, unique=True)
     title: Mapped[str] = mapped_column(String(255))
     raw_location: Mapped[str | None] = mapped_column(Text)
+    municipality: Mapped[str | None] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text)
     current_price_cents: Mapped[int | None] = mapped_column(BigInteger)
+    room_count: Mapped[int | None] = mapped_column(Integer)
+    living_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    land_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    bedroom_count: Mapped[int | None] = mapped_column(Integer)
+    has_pool: Mapped[bool | None]
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     raw_payload: Mapped[dict[str, Any] | None] = mapped_column(json_type)
+    page_html_path: Mapped[str | None] = mapped_column(Text)
+    page_html_saved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    page_html_sha256: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now
     )
 
     property: Mapped[PropertyModel | None] = relationship(back_populates="listings")
+    html_archive: Mapped[ListingHtmlArchiveModel | None] = relationship(
+        back_populates="listing",
+        cascade="all, delete-orphan",
+    )
+
+
+class ListingHtmlArchiveModel(Base):
+    __tablename__ = "listing_html_archives"
+
+    listing_id: Mapped[UUID] = mapped_column(
+        ForeignKey("listings.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    content_html: Mapped[str] = mapped_column(Text)
+    sha256: Mapped[str] = mapped_column(String(64))
+    saved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    original_filename: Mapped[str | None] = mapped_column(String(255))
+    content_type: Mapped[str] = mapped_column(String(100), default="text/html")
+
+    listing: Mapped[ListingModel] = relationship(back_populates="html_archive")
+    assets: Mapped[list[ListingHtmlArchiveAssetModel]] = relationship(
+        back_populates="archive",
+        cascade="all, delete-orphan",
+    )
+
+
+class ListingHtmlArchiveAssetModel(Base):
+    __tablename__ = "listing_html_archive_assets"
+    __table_args__ = (
+        UniqueConstraint("listing_id", "relative_path", name="uq_listing_html_asset_path"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    listing_id: Mapped[UUID] = mapped_column(
+        ForeignKey("listing_html_archives.listing_id", ondelete="CASCADE"),
+    )
+    relative_path: Mapped[str] = mapped_column(Text)
+    content_bytes: Mapped[bytes] = mapped_column(LargeBinary)
+    content_type: Mapped[str] = mapped_column(String(100))
+    sha256: Mapped[str] = mapped_column(String(64))
+    saved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    archive: Mapped[ListingHtmlArchiveModel] = relationship(back_populates="assets")
 
 
 class IngestionRunModel(Base):

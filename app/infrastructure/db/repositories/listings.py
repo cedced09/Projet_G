@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.domain.entities import ListingCreate
 from app.infrastructure.db.models import ListingModel
+from app.infrastructure.ingestion.listing_page_parser import ListingPageDetails
 
 PUBLIC_ID_PATTERN = re.compile(r"^ANN-(\d+)$")
 
@@ -31,6 +32,10 @@ class ListingRepository:
     def get(self, listing_id: UUID) -> ListingModel | None:
         return self._session.get(ListingModel, listing_id)
 
+    def list_all(self) -> list[ListingModel]:
+        stmt = select(ListingModel).order_by(ListingModel.public_id)
+        return list(self._session.scalars(stmt).all())
+
     def touch_seen(self, listing: ListingModel, last_seen_at: datetime) -> ListingModel:
         listing.last_seen_at = last_seen_at
         self._session.flush()
@@ -38,6 +43,31 @@ class ListingRepository:
 
     def attach_to_property(self, listing: ListingModel, property_id: UUID) -> ListingModel:
         listing.property_id = property_id
+        self._session.flush()
+        return listing
+
+    def update_from_page_details(
+        self,
+        listing: ListingModel,
+        details: ListingPageDetails,
+    ) -> ListingModel:
+        for field_name, value in details.__dict__.items():
+            if value is not None:
+                setattr(listing, field_name, value)
+        self._session.flush()
+        return listing
+
+    def mark_page_html_saved(
+        self,
+        listing: ListingModel,
+        *,
+        path: str | None,
+        saved_at: datetime,
+        sha256: str,
+    ) -> ListingModel:
+        listing.page_html_path = path
+        listing.page_html_saved_at = saved_at
+        listing.page_html_sha256 = sha256
         self._session.flush()
         return listing
 

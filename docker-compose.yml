@@ -7,8 +7,12 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-gite_agent}:${POSTGRES_PASSWORD:-gite_agent}@db:5432/${POSTGRES_DB:-gite_agent}
+      HTML_IMPORT_DIRECTORIES: ${HTML_IMPORT_DIRECTORIES:-/html-import}
+      HTML_AUTO_DOWNLOAD_ALLOWED_DOMAINS: ${HTML_AUTO_DOWNLOAD_ALLOWED_DOMAINS:-}
     ports:
       - "${STREAMLIT_PORT:-8501}:8501"
+    volumes:
+      - ${HTML_IMPORT_HOST_DIR:-./data/html-import}:/html-import:ro
 
   db:
     image: postgis/postgis:16-3.4

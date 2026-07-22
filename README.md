@@ -30,11 +30,10 @@ Le projet est aussi un support d'apprentissage pratique de :
 
 ## Périmètre initial
 
-Le MVP ne scrape pas automatiquement les portails immobiliers. Les annonces entrent par :
-
-1. saisie manuelle ;
-2. import d'URL avec métadonnées saisies ou autorisées ;
-3. alertes email officielles, dans une phase suivante.
+Le MVP ne scrape pas automatiquement les portails immobiliers. Le flux opérationnel actuel privilégie
+les alertes email officielles, puis la validation manuelle des annonces importées. Les formulaires de
+création manuelle de biens et d'ajout manuel d'annonces ont été retirés de l'interface pour garder le
+cockpit concentré sur le parcours réellement utilisé.
 
 ## Stack cible
 
@@ -96,6 +95,18 @@ Ou avec Docker Compose :
 docker compose up --build app
 ```
 
+La navigation latérale contient trois pages :
+
+- `Tableau de bord` pour importer, enrichir et consulter les annonces ;
+- `Carte du Var` pour afficher les annonces localisées sur une carte Leaflet/OpenStreetMap avec
+  un lien cliquable par ID `ANN-0001` ;
+- `Nettoyage` pour supprimer des entrées de test.
+
+La carte charge les tuiles OpenStreetMap depuis Internet. Elle utilise les coordonnées déjà stockées
+sur le bien quand elles existent. Sinon elle tente une localisation par commune à partir d'un
+référentiel local limité aux communes du Var déjà connues de l'application. Les annonces sans
+commune reconnue restent listées comme non localisées.
+
 ### Ingestion des alertes email
 
 Créer une adresse email dédiée aux alertes immobilières, puis configurer les paramètres IMAP dans
@@ -138,12 +149,60 @@ Quand le sujet de l'email indique explicitement un nombre d'annonces, par exempl
 une annonce pour chaque lien de tracking présent dans le message.
 
 Les annonces importées restent d'abord non rattachées. Le bouton
-`Enregistrer cette annonce comme bien` crée un bien canonique depuis l'annonce sélectionnée et la
-rattache à ce bien.
+`Enregistrer comme bien`, présent sur chaque ligne d'annonce, crée un bien canonique depuis
+l'annonce sélectionnée et la rattache à ce bien.
+
+Pour les alertes SeLoger, l'import exploite la structure HTML de la carte annonce et extrait quand
+ils sont présents : prix, nombre de pièces, surface habitable, surface de terrain, ville, nombre de
+chambres et présence d'une piscine. Le lien affiché dans l'interface est cliquable. L'application ne
+visite pas la page de l'annonce.
+
+Pour enrichir une annonce depuis sa page web sans téléchargement automatique :
+
+1. ouvrir le lien de l'annonce dans le navigateur ;
+2. enregistrer la page en `Page web complète` depuis Chrome ;
+3. laisser le fichier `.html` et le dossier associé au même endroit ;
+4. dans Streamlit, ouvrir le menu `HTML` de l'annonce ;
+5. cliquer sur `Choisir et importer le HTML` ;
+6. sélectionner le fichier `.html` dans la boîte de dialogue.
+
+L'application lit automatiquement le dossier voisin créé par Chrome, par exemple `annonce_fichiers`
+ou `annonce_files`, et archive ses fichiers avec le HTML.
+
+`HTML_IMPORT_DIRECTORIES` sert uniquement à proposer un dossier de départ à la boîte de dialogue.
+En local Windows, `~/Downloads` est inclus par défaut. Si l'application tourne dans Docker sans
+interface graphique, cette boîte de dialogue peut ne pas être disponible ; il faudra alors exécuter
+l'app localement ou ajouter un autre flux d'import adapté au serveur.
+
+Le HTML importé est sauvegardé dans PostgreSQL, dans une table dédiée. Ainsi, tous les utilisateurs
+qui accèdent à la même application et à la même base voient les mêmes archives HTML, même depuis un
+autre poste. L'interface affiche un badge `HTML enrichi` lorsque le contenu a été sauvegardé et
+analysé.
+
+L'archive conserve le document HTML fourni ou téléchargé. Lors d'un import local, le répertoire
+associé créé par le navigateur est récupéré automatiquement : images, CSS, JavaScript et autres
+fichiers liés sont alors stockés dans PostgreSQL avec l'archive HTML. À l'affichage, l'application
+tente de réintégrer ces fichiers dans le HTML archivé.
+
+Dans la liste des biens enregistrés, deux boutons sont disponibles :
+
+- `Site web` ouvre l'annonce originale ;
+- `Sauvegarde` ouvre dans le navigateur une prévisualisation locale générée depuis le HTML et les
+  fichiers associés stockés en base.
+
+Le bouton `Télécharger depuis la source` est disponible dans le menu `HTML`, mais il ne fonctionne
+que pour les domaines explicitement autorisés dans `.env` :
+
+```env
+HTML_AUTO_DOWNLOAD_ALLOWED_DOMAINS=source-autorisee.example
+```
+
+Laisser cette valeur vide désactive le téléchargement automatique et conserve le flux manuel par
+upload HTML.
 
 ### Nettoyage des données de test
 
-La page Streamlit contient une section `Nettoyage de la base`. Elle permet de supprimer :
+La navigation Streamlit contient une page `Nettoyage`. Elle permet de supprimer :
 
 - une annonce email non rattachée ;
 - un bien complet avec ses annonces rattachées.
@@ -159,5 +218,5 @@ mypy app
 pytest
 ```
 
-Le premier incrément permet de créer manuellement un bien, de rattacher une annonce avec
-`source_url`, `first_seen_at` et `last_seen_at`, puis d'afficher la liste persistée.
+Le parcours principal permet d'importer des alertes email, d'enrichir une annonce par HTML sauvegardé,
+de créer un bien depuis une annonce validée, puis d'afficher la liste persistée.

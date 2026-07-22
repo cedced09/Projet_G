@@ -13,9 +13,11 @@ class PropertyCreate(BaseModel):
     property_type: PropertyType = PropertyType.OTHER
     description: str | None = None
     price_cents: int | None = Field(default=None, ge=0)
+    room_count: int | None = Field(default=None, ge=0)
     living_area_m2: Decimal | None = Field(default=None, ge=0)
     land_area_m2: Decimal | None = Field(default=None, ge=0)
     bedroom_count: int | None = Field(default=None, ge=0)
+    has_pool: bool | None = None
     accommodation_unit_count: int | None = Field(default=None, ge=0)
     owner_area_separated: bool | None = None
     municipality: str | None = None
@@ -35,6 +37,11 @@ class PropertyRead(PropertyCreate):
     updated_at: datetime
     archived_at: datetime | None = None
     listing_count: int = 0
+    sources: str | None = None
+    primary_listing_id: UUID | None = None
+    primary_listing_public_id: str | None = None
+    primary_listing_url: str | None = None
+    primary_listing_html_saved_at: datetime | None = None
     first_seen_at: datetime | None = None
     last_seen_at: datetime | None = None
 
@@ -46,12 +53,21 @@ class ListingCreate(BaseModel):
     source_url: HttpUrl
     title: str = Field(min_length=1, max_length=255)
     raw_location: str | None = None
+    municipality: str | None = None
     description: str | None = None
     current_price_cents: int | None = Field(default=None, ge=0)
+    room_count: int | None = Field(default=None, ge=0)
+    living_area_m2: Decimal | None = Field(default=None, ge=0)
+    land_area_m2: Decimal | None = Field(default=None, ge=0)
+    bedroom_count: int | None = Field(default=None, ge=0)
+    has_pool: bool | None = None
     published_at: datetime | None = None
     first_seen_at: datetime
     last_seen_at: datetime
     raw_payload: dict[str, Any] | None = None
+    page_html_path: str | None = None
+    page_html_saved_at: datetime | None = None
+    page_html_sha256: str | None = None
 
 
 class ListingRead(ListingCreate):

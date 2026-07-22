@@ -15,3 +15,4 @@ def test_settings_ignores_docker_compose_env_values(monkeypatch: pytest.MonkeyPa
     settings = Settings(_env_file=None)
 
     assert settings.database_url == "postgresql+psycopg://user:pass@localhost:5432/db"
+    assert "~/Downloads" in settings.html_import_directories

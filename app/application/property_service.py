@@ -56,9 +56,21 @@ class PropertyService:
         )
         result: list[PropertyRead] = []
         for property_model, listing_count, first_seen_at, last_seen_at in rows:
+            sources = sorted({listing.source for listing in property_model.listings})
+            listings = sorted(
+                property_model.listings,
+                key=lambda listing: listing.created_at,
+            )
             payload: dict[str, Any] = {
                 **property_model.__dict__,
                 "listing_count": listing_count,
+                "sources": ", ".join(sources) if sources else None,
+                "primary_listing_id": listings[0].id if listings else None,
+                "primary_listing_public_id": listings[0].public_id if listings else None,
+                "primary_listing_url": listings[0].source_url if listings else None,
+                "primary_listing_html_saved_at": (
+                    _as_utc(listings[0].page_html_saved_at) if listings else None
+                ),
                 "first_seen_at": _as_utc(first_seen_at),
                 "last_seen_at": _as_utc(last_seen_at),
             }

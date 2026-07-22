@@ -3,8 +3,12 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.pytest-tmp/
+.pytest-tmp*/
 .ruff_cache/
 .mypy_cache/
 *.egg-info/
 pytest-cache-files-*/
+data/listing_html/
+data/html-import/
+data/html-preview/
+tests/_tmp_manual/

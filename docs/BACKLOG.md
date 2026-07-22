@@ -40,9 +40,10 @@
 - repositories ;
 - services applicatifs.
 
-### P1.2 Création manuelle
+### P1.2 Import email et validation utilisateur
 
-- formulaire Streamlit ;
+- import d'alertes email ;
+- validation d'une annonce comme bien ;
 - validation ;
 - gestion des erreurs ;
 - tests.

@@ -19,3 +19,5 @@ class Settings(BaseSettings):
     email_max_listings_per_message: int = 5
     email_allowed_sender_domains: str = ""
     email_allowed_url_domains: str = ""
+    html_auto_download_allowed_domains: str = ""
+    html_import_directories: str = "./data/html-import,/html-import,~/Downloads"
